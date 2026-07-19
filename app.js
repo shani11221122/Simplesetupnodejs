@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import crudroutes from "./routes/crudroutes.js";
 import { logger } from "./middleware/logger.js";
+import mongoose from "mongoose";
 
 
 dotenv.config();
@@ -17,6 +18,12 @@ app.get("/", (req, res) => {
 });
 
 app.use("/crud", crudroutes);
+
+mongoose.connect(process.env.MONGODB_URI).then(() => {
+    console.log("Connected to MongoDB");
+}).catch((error) => {
+    console.error("Error connecting to MongoDB:", error);
+});
 
 app.listen(PORT, () => {
     console.log(`http://localhost:${PORT}`);

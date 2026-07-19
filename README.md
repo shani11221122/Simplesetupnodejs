@@ -1,113 +1,131 @@
-# Express CRUD API Server
+# 🚀 Express & Mongoose RBAC CRUD API
 
-A modern, light-weight Express.js RESTful API application implementing complete CRUD operations, user management with in-memory persistence, and a custom response-time logger middleware. This project is configured to run locally or deploy seamlessly as serverless functions on [Vercel](https://vercel.com).
-
----
-
-## 🚀 Features
-
-*   **RESTful CRUD Operations**: Create, read, update, and delete mock user data.
-*   **Custom Middleware Logger**: Automatically monitors incoming HTTP method, URL, and tracks request-to-response duration in milliseconds.
-*   **Zero-Downtime Health Check**: Simple, scalable `/` index response for monitoring and uptime analysis.
-*   **Vercel Integration**: Ready-to-go `vercel.json` config routes request traffic to the Express app context wrapper.
+A modern, lightweight REST API server built with **Express.js**, integrated with **MongoDB (via Mongoose)**, featuring custom **JWT Authentication**, **Role-Based Access Control (RBAC)**, custom query logging middleware, and fully configured for serverless deployment on **Vercel**.
 
 ---
 
-## 📁 Directory Structure
+## ⚡ Tech Stack
+
+*   **Runtime:** [Node.js](https://nodejs.org/) (ES Modules)
+*   **Web Framework:** [Express.js](https://expressjs.com/) (Next-generation Routing)
+*   **Database ODM:** [Mongoose](https://mongoosejs.com/) (MongoDB Schema Validation)
+*   **Security:** [JSON Web Tokens (JWT)](https://jwt.io/) & [Bcrypt](https://github.com/kelektiv/node.bcrypt.js)
+*   **Hosting:** [Vercel](https://vercel.com/) (Serverless Ready)
+
+---
+
+## 📁 Directory Structure Breakdown
 
 ```text
 Firstweek/
 ├── controllers/
-│   └── crud.js           # User business logic (CRUD handlers)
+│   ├── auth.js          # Authentication business logic (Register & Login)
+│   └── crud.js          # User management CRUD logic
 ├── middleware/
-│   └── logger.js         # Custom response-time profiling middleware
+│   ├── auth.js          # JWT Verification middleware
+│   ├── logger.js        # Request logger (Method, URL, Response time)
+│   └── role.js          # Role-Based Access Control filters
+├── models/
+│   └── user.js          # Mongoose schema for User and roles
 ├── routes/
-│   └── crudroutes.js     # User routing and route mappings
-├── .env                  # Local environment configuration variables
-├── .gitignore            # Version control exclusions
-├── app.js                # Core entrypoint, app instantiation & exports
-├── package.json          # Dependency mappings, commands & script definitions
-└── vercel.json           # Vercel Serverless routing config
+│   └── crudroutes.js    # Express Router definitions
+├── .env                 # Port and secrets configuration
+├── .gitignore           # Ignored files for VCS
+├── app.js               # Express application configuration and bootstrapping
+├── package.json         # Scripts, dependencies, metadata
+└── vercel.json          # Deployment parameters for Vercel functions
 ```
 
 ---
 
-## 🛠️ Getting Started & Local Setup
+## 🛠️ Step-by-Step Installation & Local Setup
 
-### 1. Prerequisites
-Ensure you have [Node.js](https://nodejs.org) (v18+ recommended) installed on your system.
+### 1. Pre-requisites
+Make sure you have [Node.js](https://nodejs.org/) (v18+) and [MongoDB](https://www.mongodb.com/) installed locally.
 
-### 2. Installation
-Clone the repository and install all npm dependencies:
+### 2. Install Dependencies
+Clone the repository, navigate to the project directory, and execute:
 ```bash
 npm install
 ```
 
-### 3. Environment Allocation
-Create a `.env` file in the root directory:
+### 3. Environment Setup
+Create a new file named `.env` in the root of the project:
 ```env
 PORT=3000
+JWT_SECRET=your_super_secret_jwt_key
+# Recommended database connection variable (Required if connecting to MongoDB)
+MONGODB_URI=mongodb://localhost:27017/firstweek
 ```
 
-### 4. Running the Server
-Choose a script command depending on your local context:
-*   **Production / Standard Run**:
-    ```bash
-    npm start
-    ```
-*   **Developer Live Reload Mode**:
+### 4. Running the Project
+*   **Start server in development mode (with Hot Reloading via Nodemon):**
     ```bash
     npm run dev
     ```
-
-The application will start and output its state link (e.g., `http://localhost:3000`).
-
----
-
-## 🔌 API Documentation
-
-### 💻 Base Endpoint & Health Check
-*   **Endpoint**: `GET /`
-*   **Response**: `200 OK`
-*   **Format**:
-    ```json
-    { "status": "OK" }
+*   **Start server in production mode:**
+    ```bash
+    npm start
     ```
 
-### 👤 User CRUD Endpoints
-All user management routes are nested under the `/crud` namespace:
+---
 
-| Method | Endpoint | Description | Request Body Parameters |
-|:---|:---|:---|:---|
-| **POST** | `/crud/createuser` | Register a new user | `{ "name": "Name", "email": "user@example.com", "password": "securepassword" }` |
-| **GET** | `/crud/getallusers` | Retrieve list of all users | *None* |
-| **GET** | `/crud/getuserbyid/:id` | Fetch details of a user by ID | *Path parameter: `:id`* |
-| **PUT** | `/crud/updateuser/:id` | Update properties of an existing user | `{ "name": "New Name", "email": "newemail@example.com", "password": "newpassword" }` (All optional) |
-| **DELETE** | `/crud/deleteuser/:id` | Delete user record from store | *Path Parameter: `:id`* |
+## 🔌 API Documentation & Route Reference
+
+All routes except authentication endpoints require a JWT token passed in the `Authorization` header:
+
+```http
+Authorization: Bearer <your_jwt_token>
+```
+
+### 🔐 Authentication Endpoints
+
+| Method | Endpoint | Description | Request Body Payload |
+|---|---|---|---|
+| POST | `/crud/register` | Register a new user account | `{ "name": "John Doe", "email": "john@example.com", "password": "password123" }` |
+| POST | `/crud/login` | Login to retrieve JWT Token | `{ "email": "john@example.com", "password": "password123" }` |
+
+### 👤 User Operations (Authentication Required)
+
+| Method | Endpoint | Allowed Roles | Description | Request Parameters & Body |
+|---|---|---|---|---|
+| **POST** | `/crud/createuser` | `user` | Create a new user record | `{ "name": "Jane", "email": "jane@example.com", "password": "pass", "role": "user" }` |
+| **GET** | `/crud/getallusers` | `user`, `admin` | Retrieve all users from DB | *None* |
+| **GET** | `/crud/getuserbyid/:id` | `user`, `admin` | Fetch user details by ID | *Path Parameter: `:id`* |
+| **PUT** | `/crud/updateuser/:id` | `admin` | Update user properties | `{ "name": "Jane Mod" }` (supports partial updates) |
+| **DELETE** | `/crud/deleteuser/:id` | `admin` | Remove user record from DB | *Path Parameter: `:id`* |
 
 ---
 
-## ☁️ Deployment on Vercel
+## ⚙️ Middleware Overview
 
-This app includes a native configuration file (`vercel.json`) that directs all incoming requests to our unified Express router wrapper inside `app.js`.
+### 📝 Performance Logger
+`middleware/logger.js` hooks into the Express response pipeline using `res.on('finish')` to calculate the turnaround time for each route processing operation in milliseconds:
+```text
+GET /crud/getallusers - 4ms
+```
 
-### Single-Command CLI Deployment:
-1. Ensure the [Vercel CLI](https://vercel.com/cli) is installed nationally:
-   ```bash
-   npm i -g vercel
-   ```
-2. Log in and deploy with a simple keystroke inside the workspace:
-   ```bash
-   vercel
-   ```
-3. After confirming settings, deploy to production:
-   ```bash
-   vercel --prod
-   ```
+### 🛡️ Authentication Shield
+`middleware/auth.js` intercepts incoming protected resources, extracts the signature from the `Bearer` scheme under the authorization header, and verifies its token.
 
-### Dashboard Git Integration:
-1. Push this project to GitHub/GitLab/Bitbucket.
-2. Visit your [Vercel Dashboard](https://vercel.com) and click **"New Project"**.
-3. Import the repository and leave the framework configuration as **Other** (Vercel automatically parses `vercel.json`).
-4. (Optional) Provide the environment variables such as `PORT` under the Environment Variables toggle.
-5. Click **"Deploy"**. Enjoy your production deployment!
+### 🔑 Authorization Guard
+`middleware/role.js` processes token payloads and filters request routing, verifying if the user has an allowed role (e.g., `user` or `admin`) before serving private endpoints.
+
+---
+
+## ☁️ Deploying to Vercel
+
+The repository holds a `vercel.json` routing configuration that encapsulates the Express execution scope within serverless handlers.
+
+1.  **Global CLI Install:**
+    ```bash
+    npm i -g vercel
+    ```
+2.  **Login & Deploy:**
+    ```bash
+    vercel
+    ```
+3.  **Deploy to Production:**
+    ```bash
+    vercel --prod
+    ```
