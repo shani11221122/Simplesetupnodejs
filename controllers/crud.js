@@ -1,17 +1,13 @@
 import User from "../models/user.js";
+import { sendSuccess, sendError } from "../utils/response.js";
 
 export const createUser = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
-
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: "Name, email and password are required" });
-    }
-
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
-      return res.status(400).json({ message: "Email already exists" });
+      return sendError(res, 400, "Email already exists");
     }
 
     const user = await User.create({
@@ -21,14 +17,9 @@ export const createUser = async (req, res) => {
       role,
     });
 
-    res.status(201).json({
-      message: "User created successfully",
-      user,
-    });
+    sendSuccess(res, 201, { Message: "User created successfully",user });
   } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
+    next(error)
   }
 };
 
@@ -36,11 +27,9 @@ export const getAllUsers = async (req, res) => {
   try {
     const users = await User.find();
 
-    res.status(200).json(users);
+    sendSuccess(res, 200, { Message: "Users found successfully",users });
   } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
+    next(error)
   }
 };
 
@@ -49,16 +38,12 @@ export const getUserById = async (req, res) => {
     const user = await User.findById(req.params.id);
 
     if (!user) {
-      return res.status(404).json({
-        message: "User not found",
-      });
+      return sendError(res, 404, "User not found",user);
     }
 
-    res.status(200).json(user);
+    sendSuccess(res, 200, { Message: "User found successfully",user });
   } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
+    next(error)
   }
 };
 
@@ -68,12 +53,12 @@ export const updateUser = async (req, res) => {
     (req.params.id,req.body,{new: true,runValidators: true,});
 
     if (!user) {
-      return res.status(404).json({message: "User not found",});
+      return sendError(res, 404, "User not found");
     }
 
-    res.status(200).json({message: "User updated successfully",user});
+    sendSuccess(res, 200, { Message: "User updated successfully",user });
   } catch (error) {
-    res.status(500).json({message: error.message,});
+    next(error)
   }
 };
 
@@ -82,11 +67,11 @@ export const deleteUser = async (req, res) => {
     const user = await User.findByIdAndDelete(req.params.id);
 
     if (!user) {
-      return res.status(404).json({message: "User not found",});
+      return sendError(res, 404, "User not found");
     }
 
-    res.status(200).json({message: "User deleted successfully",user,  });
+    sendSuccess(res, 200, { Message: "User deleted successfully",user });
   } catch (error) {
-    res.status(500).json({message: error.message,});
+    next(error)
   }
 };

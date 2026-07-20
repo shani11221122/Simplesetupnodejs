@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import crudroutes from "./routes/crudroutes.js";
 import { logger } from "./middleware/logger.js";
 import mongoose from "mongoose";
+import { errorhandler } from "./middleware/errorhandler.js";    
 
 
 dotenv.config();
@@ -13,12 +14,13 @@ const PORT = process.env.PORT || 3000;
 app.use(logger);
 app.use(express.json());
 
+
 app.get("/", (req, res) => {
     res.status(200).json({ status: "OK" });
 });
 
 app.use("/crud", crudroutes);
-
+app.use(errorhandler);
 mongoose.connect(process.env.MONGODB_URI).then(() => {
     console.log("Connected to MongoDB");
 }).catch((error) => {
