@@ -20,7 +20,9 @@ A modern, lightweight REST API server built with **Express.js**, integrated with
 Firstweek/
 ├── controllers/
 │   ├── auth.js          # Authentication business logic (Register & Login)
-│   └── crud.js          # User management CRUD logic
+│   ├── comment.js       # NEW — Nested comment logic
+│   ├── crud.js          # User management CRUD logic
+│   └── post.js          # NEW — Post CRUD + filtering + sorting + pagination
 ├── middleware/
 │   ├── auth.js          # JWT Verification middleware
 │   ├── logger.js        # Request logger (Method, URL, Response time)
@@ -28,15 +30,19 @@ Firstweek/
 │   ├── validate.js      # Input validation middleware
 │   └── errorhandler.js  # Centralized error handling
 ├── models/
+│   ├── comment.js       # NEW — Comment schema (text, post, author)
+│   ├── post.js          # NEW — Post schema (title, content, status, author)
 │   └── user.js          # Mongoose schema for User and roles
 ├── routes/
-│   └── crudroutes.js    # Express Router definitions
+│   ├── crudroutes.js    # Express Router definitions
+│   └── postroutes.js    # NEW — Post routes + nested comment routes
 ├── utils/
 │   └── response.js      # Standardized success/error response helpers
 ├── .env                 # Port and secrets configuration
 ├── .gitignore           # Ignored files for VCS
 ├── app.js               # Express application configuration and bootstrapping
 ├── package.json         # Scripts, dependencies, metadata
+├── seed.js              # NEW — Seeds DB with 5 users, 35 posts, 40 comments
 └── vercel.json          # Deployment parameters for Vercel functions
 ```
 
@@ -74,6 +80,21 @@ MONGODB_URI=mongodb://localhost:27017/firstweek
 
 ---
 
+## 🌱 Seeding Sample Data
+
+To populate the database with sample data for testing pagination and filtering:
+
+```bash
+npm run seed
+```
+
+This creates:
+* 5 users (`user1@example.com` is `admin`, rest are `user`) — password: `password123`
+* 35 posts with random authors and random status (`draft`/`active`/`archived`)
+* 40 comments with random posts and authors
+
+---
+
 ## 🔌 API Documentation & Route Reference
 
 All routes except authentication endpoints require a JWT token passed in the `Authorization` header:
@@ -93,11 +114,62 @@ Authorization: Bearer <your_jwt_token>
 
 | Method | Endpoint | Allowed Roles | Description | Request Parameters & Body |
 |---|---|---|---|---|
-| **POST** | `/crud/createuser` | `user` | Create a new user record | `{ "name": "Jane", "email": "jane@example.com", "password": "pass123", "role": "user" }` |
+| **POST** | `/crud/createuser` | ~~`user`~~ → **`admin`** | Create a new user record | `{ "name": "Jane", "email": "jane@example.com", "password": "pass123", "role": "user" }` |
 | **GET** | `/crud/getallusers` | `user`, `admin` | Retrieve all users from DB | *None* |
 | **GET** | `/crud/getuserbyid/:id` | `user`, `admin` | Fetch user details by ID | *Path Parameter: `:id`* |
 | **PUT** | `/crud/updateuser/:id` | `admin` | Update user properties | `{ "name": "Jane Mod" }` (supports partial updates) |
 | **DELETE** | `/crud/deleteuser/:id` | `admin` | Remove user record from DB | *Path Parameter: `:id`* |
+
+### 📝 Post Endpoints (Authentication Required for write operations)
+
+| Method | Endpoint | Allowed Roles | Description | Body/Params |
+|---|---|---|---|---|
+| POST | `/posts` | Any authenticated | Create a new post | `{ "title": "...", "content": "...", "status": "active" }` |
+| GET | `/posts` | Public | Get all posts (filter/sort/paginate) | Query params below |
+| GET | `/posts/:id` | Public | Get single post by ID | Path param `:id` |
+| PUT | `/posts/:id` | Any authenticated | Update a post | `{ "title": "..." }` |
+| DELETE | `/posts/:id` | `admin` only | Delete a post | Path param `:id` |
+
+### 💬 Comment Endpoints (Nested under Posts)
+
+| Method | Endpoint | Allowed Roles | Description | Body/Params |
+|---|---|---|---|---|
+| POST | `/posts/:postId/comments` | Any authenticated | Add comment to a post | `{ "text": "..." }` |
+| GET | `/posts/:postId/comments` | Public | Get all comments for a post (paginated) | Query params below |
+| DELETE | `/posts/:postId/comments/:commentId` | Any authenticated | Delete a comment | Path param `:commentId` |
+
+### 🔍 Query Parameters (Filtering, Sorting, Pagination)
+
+These parameters apply to `GET /posts` to filter, sort, and paginate the result set:
+
+| Param | Example | Description |
+|---|---|---|
+| `status` | `?status=active` | Filter posts by status (`draft`, `active`, `archived`) |
+| `sortBy` | `?sortBy=createdAt` | Field to sort by (default: `createdAt`) |
+| `order` | `?order=asc` | `asc` or `desc` (default: `desc`) |
+| `page` | `?page=2` | Page number (default: `1`) |
+| `limit` | `?limit=10` | Records per page (default: `10`) |
+
+**Example Combined Request:**
+```http
+GET /posts?status=active&sortBy=createdAt&order=desc&page=1&limit=5
+```
+
+**Example Response Shape:**
+```json
+{
+  "success": true,
+  "data": {
+    "posts": [ ... ],
+    "pagination": {
+      "totalPosts": 23,
+      "currentPage": 1,
+      "totalPages": 5,
+      "limit": 5
+    }
+  }
+}
+```
 
 ---
 
@@ -252,6 +324,14 @@ Content-Type: application/json
   "error": "`superadmin` is not a valid enum value for path `role`."
 }
 ```
+
+---
+
+## 🔗 Data Relationships
+
+* `User` → has many → `Post` (via `Post.author`)
+* `Post` → has many → `Comment` (via `Comment.post`)
+* `User` → has many → `Comment` (via `Comment.author`)
 
 ---
 

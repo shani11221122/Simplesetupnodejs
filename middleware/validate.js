@@ -46,3 +46,26 @@ export const validateCreateUser = (req, res, next) => {
 
   next();
 };
+export const validatePost = (req, res, next) => {
+  const { title, content } = req.body;
+
+  if (!title || typeof title !== "string" || title.trim().length < 3) {
+    return sendError(res, 400, "Title must be a string with at least 3 characters");
+  }
+
+  if (!content || typeof content !== "string" || content.trim().length < 5) {
+    return sendError(res, 400, "Content must be a string with at least 5 characters");
+  }
+
+  next();
+};
+
+export const validateComment = (req, res, next) => {
+  const { text } = req.body;
+
+  if (!text || typeof text !== "string" || text.trim().length < 1) {
+    return sendError(res, 400, "Comment text is required");
+  }
+
+  next();
+};
