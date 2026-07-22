@@ -373,3 +373,87 @@ The repository holds a `vercel.json` routing configuration that encapsulates the
     ```bash
     vercel --prod
     ```
+
+## 🧪 Role Restriction Test Scenarios
+
+Below are 3 test scenarios that prove role-based access control (RBAC) works correctly — each shows an admin action succeeding and the same action being blocked for a regular user.
+
+### Scenario 1: Delete User — Admin vs Regular User
+
+**As Admin (`user1@example.com`):**
+```http
+DELETE /crud/deleteuser/650f1a2b3c4d5e6f7a8b9c0d
+Authorization: Bearer <admin_token>
+```
+**Result — `200 OK`:**
+```json
+{ "success": true, "data": { "_id": "650f1a2b...", "name": "Jane", ... } }
+```
+
+**As Regular User (`user2@example.com`):**
+```http
+DELETE /crud/deleteuser/650f1a2b3c4d5e6f7a8b9c0d
+Authorization: Bearer <user_token>
+```
+**Result — `403 Forbidden`:**
+```json
+{ "success": false, "error": "Access denied: insufficient permissions" }
+```
+
+### Scenario 2: Create User — Admin vs Regular User
+
+**As Admin (`user1@example.com`):**
+```http
+POST /crud/createuser
+Authorization: Bearer <admin_token>
+Content-Type: application/json
+
+{ "name": "New Employee", "email": "employee@example.com", "password": "pass123" }
+```
+**Result — `201 Created`:**
+```json
+{ "success": true, "data": { "_id": "...", "name": "New Employee", "role": "user" } }
+```
+
+**As Regular User (`user2@example.com`):**
+```http
+POST /crud/createuser
+Authorization: Bearer <user_token>
+Content-Type: application/json
+
+{ "name": "New Employee", "email": "employee2@example.com", "password": "pass123" }
+```
+**Result — `403 Forbidden`:**
+```json
+{ "success": false, "error": "Access denied: insufficient permissions" }
+```
+
+### Scenario 3: Delete Post — Admin vs Regular User
+
+**As Admin (`user1@example.com`):**
+```http
+DELETE /posts/650f9a1c3c4d5e6f7a8b9c1e
+Authorization: Bearer <admin_token>
+```
+**Result — `200 OK`:**
+```json
+{ "success": true, "data": { "_id": "650f9a1c...", "title": "Sample Post 12", ... } }
+```
+
+**As Regular User (`user2@example.com`):**
+```http
+DELETE /posts/650f9a1c3c4d5e6f7a8b9c1e
+Authorization: Bearer <user_token>
+```
+**Result — `403 Forbidden`:**
+```json
+{ "success": false, "error": "Access denied: insufficient permissions" }
+```
+
+### Summary Table
+
+| Scenario | Endpoint | Admin Result | Regular User Result |
+|---|---|---|---|
+| 1 | `DELETE /crud/deleteuser/:id` | ✅ 200 OK | ❌ 403 Forbidden |
+| 2 | `POST /crud/createuser` | ✅ 201 Created | ❌ 403 Forbidden |
+| 3 | `DELETE /posts/:id` | ✅ 200 OK | ❌ 403 Forbidden |

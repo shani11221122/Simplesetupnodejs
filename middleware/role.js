@@ -1,9 +1,9 @@
+import { sendError } from "../utils/response.js";
+
 export const authorizeRoles = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
-        message: "Access Denied",
-      });
+      return sendError(res, 403, "Access Denied");
     }
 
     next();
