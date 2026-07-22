@@ -50,7 +50,7 @@ export const getUserById = async (req, res) => {
 export const updateUser = async (req, res) => {
   try {
     const user = await User.findByIdAndUpdate
-    (req.params.id,req.body,{new: true,runValidators: true,});
+    (req.params.id,req.body,{returnDocument: "after",runValidators: true,});
 
     if (!user) {
       return sendError(res, 404, "User not found");

@@ -1,5 +1,27 @@
+import multer from "multer";
+
 export const errorhandler = (err, req, res, next) => {
   console.error(err.name, "-", err.message);
+
+  if (err instanceof multer.MulterError) {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({
+        success: false,
+        error: "File is too large. Maximum size allowed is 2MB",
+      });
+    }
+    return res.status(400).json({
+      success: false,
+      error: err.message,
+    });
+  }
+
+  if (err.message && err.message.includes("Only JPEG, PNG, and WEBP")) {
+    return res.status(400).json({
+      success: false,
+      error: err.message,
+    });
+  }
 
   if (err.name === "CastError") {
     return res.status(400).json({
